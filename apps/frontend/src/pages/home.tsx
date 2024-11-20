@@ -1,16 +1,56 @@
 import { Icon } from "@/components/icon";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useTheme } from "@/components/theme-provider";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ArrowRight, BookOpen, ChevronsDown, ChevronsDownIcon, Github, icons, Menu, Star } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  ArrowRight,
+  BookOpen,
+  ChevronsDown,
+  ChevronsDownIcon,
+  Github,
+  icons,
+  Menu,
+  Star,
+} from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -222,7 +262,7 @@ function HeroSection() {
                 transition={{
                   duration: 5,
                   repeat: Infinity,
-                  ease: "linear"
+                  ease: "linear",
                 }}
               >
                 Structured Courses
@@ -232,22 +272,24 @@ function HeroSection() {
           </div>
 
           <p className="max-w-screen-sm mx-auto text-xl text-muted-foreground">
-            Turn any YouTube playlist into an interactive learning experience. Track progress,
-            take notes, and master new skills with AI-powered course generation.
+            Turn any YouTube playlist into an interactive learning experience.
+            Track progress, take notes, and master new skills with AI-powered
+            course generation.
           </p>
 
           <div className="space-y-4 md:space-y-0 md:space-x-4">
-            <Button className="w-5/6 md:w-1/4 font-bold group/arrow">
-              Create Your Course
-              <ArrowRight className="size-5 ml-2 group-hover/arrow:translate-x-1 transition-transform" />
-            </Button>
+            <Link to="/sign-up">
+              <Button className="w-5/6 md:w-1/4 font-bold group/arrow">
+                Get Started
+                <ArrowRight className="size-5 ml-2 group-hover/arrow:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
 
-            <Button
-              variant="secondary"
-              className="w-5/6 md:w-1/4 font-bold"
-            >
-              Watch Demo
-            </Button>
+            <Link to="/sign-in">
+              <Button variant="secondary" className="w-5/6 md:w-1/4 font-bold">
+                Log In
+              </Button>
+            </Link>
           </div>
         </motion.div>
 
@@ -321,8 +363,9 @@ function BenefitsSection() {
             Learn Smarter, Not Harder
           </h2>
           <p className="text-xl text-muted-foreground mb-8">
-            Powered by Google's Gemini AI, our platform transforms how you learn from YouTube content.
-            Get personalized learning experiences with smart content organization and interactive features.
+            Powered by Google's Gemini AI, our platform transforms how you learn
+            from YouTube content. Get personalized learning experiences with
+            smart content organization and interactive features.
           </p>
         </div>
 
@@ -425,9 +468,9 @@ export const FeaturesSection = () => {
       </h2>
 
       <h3 className="md:w-1/2 mx-auto text-xl text-center text-muted-foreground mb-8">
-        Experience the future of online learning with our Gemini-powered platform.
-        We combine the best of YouTube's content with advanced AI to create an
-        unmatched learning experience.
+        Experience the future of online learning with our Gemini-powered
+        platform. We combine the best of YouTube's content with advanced AI to
+        create an unmatched learning experience.
       </h3>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -476,7 +519,8 @@ interface ServiceProps {
 const serviceList: ServiceProps[] = [
   {
     title: "Smart Course Generation",
-    description: "AI-powered course structure and content organization from YouTube videos",
+    description:
+      "AI-powered course structure and content organization from YouTube videos",
     pro: 0,
   },
   {
@@ -507,8 +551,8 @@ export const ServicesSection = () => {
         Grow Your Business
       </h2>
       <h3 className="md:w-1/2 mx-auto text-xl text-center text-muted-foreground mb-8">
-        Choose the plan that fits your learning journey. From basic course creation
-        to advanced AI-powered features, we've got you covered.
+        Choose the plan that fits your learning journey. From basic course
+        creation to advanced AI-powered features, we've got you covered.
       </h3>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
@@ -645,27 +689,33 @@ interface FAQProps {
 const FAQList: FAQProps[] = [
   {
     question: "How does the AI course generation work?",
-    answer: "Our platform uses Google's Gemini AI to analyze YouTube videos, automatically generating structured chapters, summaries, and interactive quizzes. It identifies key concepts, creates timestamps, and organizes content into a logical learning path.",
+    answer:
+      "Our platform uses Google's Gemini AI to analyze YouTube videos, automatically generating structured chapters, summaries, and interactive quizzes. It identifies key concepts, creates timestamps, and organizes content into a logical learning path.",
     value: "item-1",
   },
   {
     question: "Can I use any YouTube video for course creation?",
-    answer: "Yes! You can use any public YouTube video or playlist. Our AI works best with educational content, tutorials, and lectures. We recommend videos with clear speech and structured content for optimal results.",
+    answer:
+      "Yes! You can use any public YouTube video or playlist. Our AI works best with educational content, tutorials, and lectures. We recommend videos with clear speech and structured content for optimal results.",
     value: "item-2",
   },
   {
-    question: "What makes your platform different from regular YouTube playlists?",
-    answer: "Unlike regular playlists, we offer AI-powered features like automatic chapter generation, smart summaries, progress tracking, interactive quizzes, and a collaborative learning environment. Our Gemini AI helps create a more engaging and effective learning experience.",
+    question:
+      "What makes your platform different from regular YouTube playlists?",
+    answer:
+      "Unlike regular playlists, we offer AI-powered features like automatic chapter generation, smart summaries, progress tracking, interactive quizzes, and a collaborative learning environment. Our Gemini AI helps create a more engaging and effective learning experience.",
     value: "item-3",
   },
   {
     question: "How accurate is the AI-generated content?",
-    answer: "Our Gemini-powered AI achieves high accuracy in content analysis and organization. However, you can always edit and customize the generated content to better suit your needs.",
+    answer:
+      "Our Gemini-powered AI achieves high accuracy in content analysis and organization. However, you can always edit and customize the generated content to better suit your needs.",
     value: "item-4",
   },
   {
     question: "Do you offer offline access to courses?",
-    answer: "Yes, premium users can download course materials, including AI-generated summaries and quizzes, for offline access through our mobile app.",
+    answer:
+      "Yes, premium users can download course materials, including AI-generated summaries and quizzes, for offline access through our mobile app.",
     value: "item-5",
   },
 ];
