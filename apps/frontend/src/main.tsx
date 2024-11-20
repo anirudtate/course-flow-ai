@@ -7,7 +7,7 @@ import { Home } from "@/pages/home";
 import { SignIn, SignUp } from "@clerk/clerk-react";
 import RootLayout from "./layouts/root-layout";
 import DashboardLayout from "./layouts/dashboard-layout";
-import { Dashboard } from "./pages/dashboard";
+import Dashboard from "./pages/dashboard";
 
 const router = createBrowserRouter([
   {
