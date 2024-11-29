@@ -29,6 +29,10 @@ try {
 
 app.use("/courses", requireAuth(), coursesRouter);
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
 });
