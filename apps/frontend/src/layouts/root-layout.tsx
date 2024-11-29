@@ -10,6 +10,10 @@ if (!PUBLISHABLE_KEY) {
 export default function RootLayout() {
   const navigate = useNavigate();
 
+  const primaryColor = getComputedStyle(document.documentElement)
+    .getPropertyValue("--primary")
+    .trim();
+
   return (
     <ClerkProvider
       routerPush={(to) => navigate(to)}
@@ -25,7 +29,7 @@ export default function RootLayout() {
       afterMultiSessionSingleSignOutUrl="/dashboard"
       appearance={{
         variables: {
-          colorPrimary: "hsl(221.2, 83.2%, 53.3%)",
+          colorPrimary: `hsl(${primaryColor})`,
         },
         layout: {
           unsafe_disableDevelopmentModeWarnings: true,

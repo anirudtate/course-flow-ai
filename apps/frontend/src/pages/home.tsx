@@ -299,7 +299,6 @@ function HeroSection() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <div className="absolute top-2 lg:-top-8 left-1/2 transform -translate-x-1/2 w-[90%] mx-auto h-24 lg:h-80 bg-primary/50 rounded-full blur-3xl"></div>
           <img
             width={1200}
             height={1200}
@@ -311,8 +310,6 @@ function HeroSection() {
             }
             alt="dashboard"
           />
-
-          <div className="absolute bottom-0 left-0 w-full h-20 md:h-28 bg-gradient-to-b from-background/0 via-background/50 to-background rounded-lg"></div>
         </motion.div>
       </div>
     </section>
@@ -855,7 +852,7 @@ export const FooterSection = () => {
               to="https://github.com/leoMirandaa"
               className="text-primary transition-all border-primary hover:border-b-2 ml-1"
             >
-              Leo Miranda
+              Anirud Tate
             </Link>
           </h3>
         </section>

@@ -1,12 +1,11 @@
 import * as React from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Outlet, useNavigate } from "react-router-dom";
+import Loader from "@/components/loader";
 
 export default function DashboardLayout() {
   const { userId, isLoaded } = useAuth();
   const navigate = useNavigate();
-
-  console.log("test", userId);
 
   React.useEffect(() => {
     if (isLoaded && !userId) {
@@ -14,7 +13,16 @@ export default function DashboardLayout() {
     }
   }, [isLoaded]);
 
-  if (!isLoaded) return "Loading...";
+  if (!isLoaded)
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader />
+      </div>
+    );
 
-  return <Outlet />;
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      <Outlet />
+    </div>
+  );
 }
