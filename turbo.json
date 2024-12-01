@@ -3,7 +3,6 @@
   "ui": "tui",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*", "vercel.json"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/**"]
     },

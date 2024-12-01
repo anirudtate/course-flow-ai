@@ -58,13 +58,12 @@ const router = createBrowserRouter([
   },
 ]);
 
-const queryClient = new QueryClient();
-
 createRoot(document.getElementById("root")!).render(<App />);
 
 setupAuthInterseptor();
 
 function App() {
+  const queryClient = new QueryClient();
   return (
     <StrictMode>
       <QueryClientProvider client={queryClient}>

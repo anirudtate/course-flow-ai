@@ -14,6 +14,7 @@ app.use(cors());
 app.use(clerkMiddleware());
 
 const port = process.env.PORT || 3000;
+
 const mongoUri = process.env.DATABASE_URL;
 
 if (!mongoUri) {
