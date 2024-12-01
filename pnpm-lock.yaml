@@ -8,9 +8,15 @@ importers:
 
   .:
     devDependencies:
+      pre-commit:
+        specifier: ^1.2.2
+        version: 1.2.2
       prettier:
         specifier: ^3.2.5
         version: 3.3.3
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
       turbo:
         specifier: ^2.2.3
         version: 2.2.3
