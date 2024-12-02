@@ -1,0 +1,2 @@
+pnpm build --filter backend
+git add -A

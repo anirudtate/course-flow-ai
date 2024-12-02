@@ -6,15 +6,8 @@
   "scripts": {
     "build": "rimraf dist && tsc --project tsconfig.json && tsc-alias -p tsconfig.json && cp package.json dist/",
     "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts",
-    "ts.check": "tsc --project tsconfig.json",
-    "add-build": "git add dist"
+    "dev": "nodemon src/index.ts"
   },
-  "pre-commit": [
-    "ts.check",
-    "build",
-    "add-build"
-  ],
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -24,7 +17,6 @@
     "@types/node": "^22.8.4",
     "concurrently": "^9.1.0",
     "nodemon": "^3.1.7",
-    "pre-commit": "^1.2.2",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.10",
