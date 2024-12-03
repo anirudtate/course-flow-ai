@@ -1,4 +1,6 @@
 import Loader from "@/components/loader";
+import Navbar from "@/components/navbar";
+import { Button } from "@/components/ui/button";
 import {
   SidebarGroup,
   SidebarContent,
@@ -11,9 +13,11 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
 import { api } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, BookmarkPlus } from "lucide-react";
 import { useEffect } from "react";
 
 import { useParams, useSearchParams } from "react-router-dom";
@@ -51,11 +55,14 @@ export default function CoursePage() {
     <SidebarProvider>
       <AppSidebar
         data={course}
+        activeSection={activeSection}
         setActiveSection={(section) => setSearchParams({ section })}
       />
-      <main>
-        <SidebarTrigger />
-        <div>{activeContent.title}</div>
+      <main className="flex flex-col w-full">
+        <Navbar startElement={<SidebarTrigger className="mr-2" />} />
+        <div className="p-4 max-w-6xl mx-auto w-full">
+          <div className="text-lg font-bold">{activeContent.title}</div>
+        </div>
       </main>
     </SidebarProvider>
   );
@@ -64,22 +71,53 @@ export default function CoursePage() {
 function AppSidebar({
   data,
   setActiveSection,
+  activeSection,
 }: {
   data: any;
   setActiveSection: (section: string) => void;
+  activeSection: any;
 }) {
   return (
     <Sidebar>
       {/* <SidebarHeader /> */}
       <SidebarContent>
-        <SidebarGroup />
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <Button variant="outline" className="w-fit">
+            <ArrowLeft /> Back Go Dashboard
+          </Button>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            {data.thumbnail ? (
+              <img
+                src={data.thumbnail}
+                alt={data.title}
+                className="w-full h-40 object-cover rounded-md"
+              />
+            ) : (
+              <div className="w-full h-40 rounded-md bg-muted flex items-center justify-center">
+                <div className="text-muted-foreground text-center">
+                  <BookmarkPlus className="h-8 w-8 mx-auto mb-2" />
+                  <span className="text-sm">No image available</span>
+                </div>
+              </div>
+            )}
+          </SidebarGroupContent>
+          <SidebarHeader>{data.title}</SidebarHeader>
+          <SidebarGroupContent className="text-muted-foreground">
+            {data.description}
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Lessons</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {data.content.map((item: any, index: number) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={index.toString() === activeSection.toString()}
+                  >
                     <div
                       className="cursor-pointer"
                       onClick={() => setActiveSection(index.toString())}

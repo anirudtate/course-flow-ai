@@ -13,7 +13,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { ModeToggle } from "./mode-toggle";
 
-export default function Navbar() {
+export default function Navbar({
+  startElement = null,
+}: {
+  startElement?: any;
+}) {
   const { user } = useUser();
 
   return (
@@ -21,6 +25,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6">
         <div className="flex justify-between items-center py-2.5">
           <div className="flex items-center gap-3">
+            {startElement}
             <BookOpen size={18} />
             <h1 className="text-xl font-bold text-foreground">
               Course Flow AI
