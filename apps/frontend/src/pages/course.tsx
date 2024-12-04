@@ -1,3 +1,4 @@
+import { Footer } from "@/components/footer";
 import Loader from "@/components/loader";
 import Navbar from "@/components/navbar";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BookmarkPlus } from "lucide-react";
 import { useEffect } from "react";
 
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 export default function CoursePage() {
   const { id } = useParams();
@@ -58,11 +59,33 @@ export default function CoursePage() {
         activeSection={activeSection}
         setActiveSection={(section) => setSearchParams({ section })}
       />
-      <main className="flex flex-col w-full">
+      <main className="flex flex-col w-full h-full">
         <Navbar startElement={<SidebarTrigger className="mr-2" />} />
         <div className="p-4 max-w-6xl mx-auto w-full">
+          <Link to="/dashboard">
+            <Button variant="outline" className="w-fit">
+              <ArrowLeft /> Back Go Dashboard
+            </Button>
+          </Link>
+
+          <div className="p-2" />
           <div className="text-lg font-bold">{activeContent.title}</div>
+          <div className="p-1" />
+          <div className="text-md text-muted-foreground">
+            {activeContent.description}
+          </div>
+          <div className="p-2" />
+          <iframe
+            className="h-full rounded-lg aspect-video border-4"
+            width="100%"
+            src={activeContent.videoUrl}
+            title="YouTube video player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          ></iframe>
+          <div className="p-2" />
         </div>
+        <div className="p-2" />
+        <Footer />
       </main>
     </SidebarProvider>
   );
@@ -79,9 +102,9 @@ function AppSidebar({
 }) {
   return (
     <Sidebar>
-      {/* <SidebarHeader /> */}
+      <SidebarHeader />
       <SidebarContent>
-        <SidebarGroup>
+        {/* <SidebarGroup>
           <Button variant="outline" className="w-fit">
             <ArrowLeft /> Back Go Dashboard
           </Button>
@@ -107,7 +130,7 @@ function AppSidebar({
           <SidebarGroupContent className="text-muted-foreground">
             {data.description}
           </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarGroup> */}
         <SidebarGroup>
           <SidebarGroupLabel>Lessons</SidebarGroupLabel>
           <SidebarGroupContent>
