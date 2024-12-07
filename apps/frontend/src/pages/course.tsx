@@ -1,13 +1,12 @@
 import { Footer } from "@/components/footer";
 import Loader from "@/components/loader";
-import Navbar from "@/components/navbar";
+import FloatingNavbar from "@/components/floating-navbar";
 import { Button } from "@/components/ui/button";
 import {
   SidebarGroup,
   SidebarContent,
   SidebarFooter,
   SidebarProvider,
-  SidebarTrigger,
   Sidebar,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -18,7 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { api } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, PlayCircle } from "lucide-react";
 import { useEffect } from "react";
 
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -50,44 +49,85 @@ export default function CoursePage() {
     );
   if (!course) return <div>Course not found</div>;
 
-  const activeContent = course.content[parseInt(activeSection)];
+  const activeTopic = course.topics[parseInt(activeSection)];
 
   return (
-    <SidebarProvider>
-      <AppSidebar
-        data={course}
-        activeSection={activeSection}
-        setActiveSection={(section) => setSearchParams({ section })}
-      />
-      <main className="flex flex-col w-full h-full">
-        <Navbar startElement={<SidebarTrigger className="mr-2" />} />
-        <div className="p-4 max-w-6xl mx-auto w-full">
-          <Link to="/dashboard">
-            <Button variant="outline" className="w-fit">
-              <ArrowLeft /> Back Go Dashboard
-            </Button>
-          </Link>
+    <div className="min-h-screen">
+      <FloatingNavbar hideWhenScrolling={false} />
+      <SidebarProvider>
+        <AppSidebar
+          data={course}
+          activeSection={activeSection}
+          setActiveSection={(section) => setSearchParams({ section })}
+        />
+        <main className="flex flex-col w-full h-full">
+          <div className="p-6 max-w-6xl mx-auto w-full">
+            <div className="flex justify-between items-center">
+              <Link to="/dashboard">
+                <Button variant="outline" className="w-fit">
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                </Button>
+              </Link>
+              <div className="flex items-center gap-2">
+                {parseInt(activeSection) > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setSearchParams({
+                        section: (parseInt(activeSection) - 1).toString(),
+                      })
+                    }
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous Lesson
+                  </Button>
+                )}
+                {parseInt(activeSection) < course.topics.length - 1 && (
+                  <Button
+                    onClick={() =>
+                      setSearchParams({
+                        section: (parseInt(activeSection) + 1).toString(),
+                      })
+                    }
+                  >
+                    Next Lesson <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
 
-          <div className="p-2" />
-          <div className="text-lg font-bold">{activeContent.title}</div>
-          <div className="p-1" />
-          <div className="text-md text-muted-foreground">
-            {activeContent.description}
+            <div className="mt-8">
+              <h1 className="text-2xl font-bold tracking-tight">
+                {activeTopic?.title}
+              </h1>
+              <p className="mt-2 text-lg text-muted-foreground leading-relaxed">
+                {activeTopic?.description}
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <div className="relative rounded-lg overflow-hidden border bg-background shadow-sm">
+                <iframe
+                  className="w-full aspect-video"
+                  src={activeTopic?.videoUrl}
+                  title="Video Player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                ></iframe>
+              </div>
+              <div className="mt-4 flex justify-between items-center text-sm text-muted-foreground">
+                <div>
+                  Lesson {parseInt(activeSection) + 1} of {course.topics.length}
+                </div>
+                <div className="flex items-center">
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                  {activeTopic?.duration || "Video Lesson"}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="p-2" />
-          <iframe
-            className="h-full rounded-lg aspect-video border-4"
-            width="100%"
-            src={activeContent.videoUrl}
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          ></iframe>
-          <div className="p-2" />
-        </div>
-        <div className="p-2" />
-        <Footer />
-      </main>
-    </SidebarProvider>
+          <Footer />
+        </main>
+      </SidebarProvider>
+    </div>
   );
 }
 
@@ -98,54 +138,29 @@ function AppSidebar({
 }: {
   data: any;
   setActiveSection: (section: string) => void;
-  activeSection: any;
+  activeSection: string;
 }) {
   return (
     <Sidebar>
-      <SidebarHeader />
-      <SidebarContent>
-        {/* <SidebarGroup>
-          <Button variant="outline" className="w-fit">
-            <ArrowLeft /> Back Go Dashboard
-          </Button>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            {data.thumbnail ? (
-              <img
-                src={data.thumbnail}
-                alt={data.title}
-                className="w-full h-40 object-cover rounded-md"
-              />
-            ) : (
-              <div className="w-full h-40 rounded-md bg-muted flex items-center justify-center">
-                <div className="text-muted-foreground text-center">
-                  <BookmarkPlus className="h-8 w-8 mx-auto mb-2" />
-                  <span className="text-sm">No image available</span>
-                </div>
-              </div>
-            )}
-          </SidebarGroupContent>
-          <SidebarHeader>{data.title}</SidebarHeader>
-          <SidebarGroupContent className="text-muted-foreground">
-            {data.description}
-          </SidebarGroupContent>
-        </SidebarGroup> */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Lessons</SidebarGroupLabel>
+      <SidebarHeader className="h-16" /> {/* Spacing for navbar */}
+      <SidebarContent className="px-4">
+        <SidebarGroup className="mt-8">
+          <SidebarGroupLabel className="text-sm font-medium">
+            Course Content
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {data.content.map((item: any, index: number) => (
+              {data.topics.map((item: any, index: number) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
                     isActive={index.toString() === activeSection.toString()}
                   >
                     <div
-                      className="cursor-pointer"
+                      className="cursor-pointer p-2 hover:bg-accent rounded-md transition-colors"
                       onClick={() => setActiveSection(index.toString())}
                     >
-                      <span>{item.title}</span>
+                      <span className="text-sm font-medium">{item.title}</span>
                     </div>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -153,7 +168,6 @@ function AppSidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup />
       </SidebarContent>
       <SidebarFooter />
     </Sidebar>

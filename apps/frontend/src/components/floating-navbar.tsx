@@ -15,13 +15,19 @@ import {
 } from "./ui/sheet";
 import { AccountMenu } from "./account-menu";
 import { Input } from "./ui/input";
+
 const FloatingNavbar = ({
   showAccount = true,
-}: { showAccount?: boolean } = {}) => {
+  hideWhenScrolling = true,
+}: { showAccount?: boolean; hideWhenScrolling?: boolean } = {}) => {
   const [isVisible, setIsVisible] = useState(true);
   const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
+    if (!hideWhenScrolling) {
+      setIsVisible(true);
+      return;
+    }
     const previous = scrollY.getPrevious();
     if (previous) {
       if (latest < previous) {
@@ -46,7 +52,7 @@ const FloatingNavbar = ({
       }}
     >
       <div className="w-full px-4 py-2">
-        <nav className="mx-auto max-w-7xl relative rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-between px-6 py-3">
+        <nav className="mx-auto max-w-7xl relative rounded-full bg-background flex items-center justify-between px-6 py-3">
           <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center space-x-2">
               <Brain className="h-6 w-6 text-foreground" />
@@ -67,17 +73,20 @@ const FloatingNavbar = ({
                 />
               </div>
             )}
-            <ModeToggle buttonVariant="outline" />
+            <ModeToggle
+              buttonVariant="outline"
+              buttonClassName="bg-transparent"
+            />
             <div className="h-6 w-px bg-border" />
             {showAccount ? (
               <AccountMenu />
             ) : (
               <>
                 <Button variant="ghost" asChild>
-                  <Link to="/login">Login</Link>
+                  <Link to="/sign-in">Login</Link>
                 </Button>
                 <Button asChild>
-                  <Link to="/signup">Sign Up</Link>
+                  <Link to="/sign-up">Sign Up</Link>
                 </Button>
               </>
             )}

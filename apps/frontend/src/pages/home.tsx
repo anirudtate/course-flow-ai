@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { createElement } from "react";
+import { Footer } from "@/components/footer";
 
 const animations = {
   container: {
@@ -167,13 +168,13 @@ export function Home() {
 
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
             <Button asChild size="lg">
-              <Link to="/create">
+              <Link to="/sign-up">
                 Start Your Journey <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline">
+            {/* <Button asChild size="lg" variant="outline">
               <Link to="/demo">Watch Demo</Link>
-            </Button>
+            </Button> */}
           </div>
 
           {/* Dashboard Preview */}
@@ -344,7 +345,7 @@ export function Home() {
           />
           <div className="flex justify-center">
             <Button asChild size="lg" className="text-lg">
-              <Link to="/create">
+              <Link to="/sign-up">
                 Create Your Path <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
@@ -353,30 +354,7 @@ export function Home() {
       </section>
 
       {/* Footer Section */}
-      <footer className="py-8">
-        <div className="container">
-          <p className="text-sm text-muted-foreground">
-            &copy; 2024 course-flow-ai • All Rights Reserved • Created by{" "}
-            <a
-              href="https://github.com/anirudtate"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              Anirud Tate
-            </a>{" "}
-            and{" "}
-            <a
-              href="https://github.com/Sushils-Coding"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              Sushil Verma
-            </a>
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
