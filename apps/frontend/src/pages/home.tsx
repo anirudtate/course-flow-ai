@@ -1,6 +1,7 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import FloatingNavbar from "@/components/floating-navbar";
 import {
   ArrowRight,
   BookOpen,
@@ -97,8 +98,15 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
 }
 
 export function Home() {
+  const { scrollYProgress } = useScroll();
+
+  const dashboardY = useTransform(scrollYProgress, [0, 0.2], [-50, 0]);
+  const dashboardRotateX = useTransform(scrollYProgress, [0, 0.2], [15, 0]);
+  const dashboardScale = useTransform(scrollYProgress, [0, 0.2], [0.95, 1]);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col">
+      <FloatingNavbar showAccount={false} />
       {/* Hero Section */}
       <section className="relative py-24">
         <motion.div
@@ -132,12 +140,17 @@ export function Home() {
           </div>
 
           {/* Dashboard Preview */}
-          <motion.div className="mt-20 mb-16 relative mx-auto max-w-5xl p-8">
+          <motion.div
+            className="mt-12 sm:mt-20 mb-8 sm:mb-16 relative mx-auto w-full md:max-w-5xl px-4 sm:p-8"
+            style={{
+              perspective: 1000,
+            }}
+          >
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-primary/30 via-secondary/20 to-primary/30 rounded-[2rem] blur-2xl"
+              className="absolute inset-0 bg-gradient-to-r from-violet-600/60 via-emerald-500/60 to-violet-600/60 rounded-[1.5rem] sm:rounded-[2rem] blur-2xl"
               animate={{
-                opacity: [0.5, 0.8, 0.5],
-                scale: [1, 1.02, 1],
+                opacity: [0.4, 0.8, 0.4],
+                scale: [0.95, 1.05, 0.95],
               }}
               transition={{
                 duration: 5,
@@ -145,19 +158,28 @@ export function Home() {
                 ease: "easeInOut",
               }}
             />
-            <div className="relative rounded-[2rem] p-3 border-2 border-white/30 bg-white/10 backdrop-blur-xl">
+            <motion.div
+              className="relative rounded-[1.5rem] sm:rounded-[2rem] p-2 sm:p-3 border-2 border-white/40 bg-white/15 backdrop-blur-xl shadow-[0_0_15px_rgba(255,255,255,0.25)]"
+              style={{
+                y: window.innerWidth >= 768 ? dashboardY : 0,
+                rotateX: window.innerWidth >= 768 ? dashboardRotateX : 0,
+                scale: window.innerWidth >= 768 ? dashboardScale : 1,
+                transformOrigin: "center top",
+              }}
+            >
               <img
                 src="/dashboard.png"
                 alt="Course Flow Dashboard"
-                className="w-full rounded-2xl"
+                className="w-full md:w-full h-auto mx-auto rounded-xl sm:rounded-2xl"
+                loading="eager"
               />
-            </div>
+            </motion.div>
           </motion.div>
         </motion.div>
       </section>
 
       {/* How it Works Section */}
-      <section className="py-32 bg-background relative">
+      <section className="py-16 bg-background relative">
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] pointer-events-none" />
         <div className="container">
           <SectionHeader

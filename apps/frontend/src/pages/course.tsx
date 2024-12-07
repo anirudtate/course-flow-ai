@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { api } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, BookmarkPlus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
 
 import { Link, useParams, useSearchParams } from "react-router-dom";
