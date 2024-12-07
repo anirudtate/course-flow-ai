@@ -58,13 +58,15 @@ const FloatingNavbar = ({
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
-            <div className="relative flex-grow md:flex-grow-0">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search courses..."
-                className="pl-10 w-full md:w-[250px] bg-transparent"
-              />
-            </div>
+            {showAccount && (
+              <div className="relative flex-grow md:flex-grow-0">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search courses..."
+                  className="pl-10 w-full md:w-[250px] bg-transparent"
+                />
+              </div>
+            )}
             <ModeToggle buttonVariant="outline" />
             <div className="h-6 w-px bg-border" />
             {showAccount ? (
