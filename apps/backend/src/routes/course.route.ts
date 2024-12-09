@@ -16,7 +16,7 @@ const upload = multer({
 
 // Model configuration
 const MODEL_CONFIG = {
-  provider: process.env.AI_PROVIDER || 'huggingface', // 'gemini' or 'huggingface'
+  provider: process.env.AI_PROVIDER || 'gemini', // 'gemini' or 'huggingface'
   huggingfaceModel: 'mistralai/Mixtral-8x7B-Instruct-v0.1'
 };
 
@@ -71,13 +71,10 @@ The response MUST be a valid JSON object with the following schema:
     {
       "title": "string - A concise, descriptive title for the topic",
       "description": "string - A detailed 2-3 sentence description of the topic",
-      "videoUrl": "string - A URL to the video for the topic",
-      "duration": "number - Estimated duration in minutes (between 1-10)",
       "order": "number - The order in which the topic should be displayed in the course"
     }
   ],
   "totalDuration": "number - Estimated total duration in hours (between 1-50)",
-  "imagePrompt": "string - A detailed prompt for generating a course thumbnail image that accurately represents ${topic}. The prompt would be used for generating course thumbnail using stable-diffusion, the prompt should create a minimal thumbnail"
 }
 
 Ensure the response:
@@ -131,41 +128,38 @@ Ensure the response:
     }
 
     // Generate an image for the course using Hugging Face
-    try {
-      const imageBlob = await hf.textToImage({
-        inputs: courseData.imagePrompt,
-        model: "stabilityai/stable-diffusion-3.5-large-turbo",
-        parameters: {
-          negative_prompt: "text, watermark, low quality, blurry, realistic photos, human faces",
-          width: 768,
-          height: 432,
-          guidance_scale: 7.5,
-          num_inference_steps: 50
-        }
-      });
+    // try {
+    //   const imageBlob = await hf.textToImage({
+    //     inputs: courseData.title,
+    //     model: "frankhenry6/ytthumbnail",
+    //     parameters: {
+    //       width: 768,
+    //       height: 432,
+    //       guidance_scale: 7.5,
+    //       num_inference_steps: 50
+    //     }
+    //   });
 
-      if (!imageBlob) {
-        throw new Error("No image generated");
-      }
+    //   if (!imageBlob) {
+    //     throw new Error("No image generated");
+    //   }
 
-      // Convert blob to Buffer
-      const buffer = Buffer.from(await imageBlob.arrayBuffer());
+    //   // Convert blob to Buffer
+    //   const buffer = Buffer.from(await imageBlob.arrayBuffer());
       
-      // Upload to Vercel Blob
-      const { url } = await put(
-        `course-thumbnails/${Date.now()}-${topic.toLowerCase().replace(/\s+/g, '-')}.png`, 
-        buffer, 
-        { access: 'public' }
-      );
+    //   // Upload to Vercel Blob
+    //   const { url } = await put(
+    //     `course-thumbnails/${Date.now()}-${courseData.title.toLowerCase().replace(/\s+/g, '-')}.png`, 
+    //     buffer, 
+    //     { access: 'public' }
+    //   );
       
-      // Add the image URL to courseData
-      courseData.thumbnail = url;
-    } catch (imageError) {
-      console.error("Error generating image:", imageError);
-      console.error("Error details:", JSON.stringify(imageError, null, 2));
-      // Use a default thumbnail if image generation fails
-      courseData.thumbnail = "https://placehold.co/1024x576?text=Course+Thumbnail";
-    }
+    //   // Add the image URL to courseData
+    //   courseData.thumbnail = url;
+    // } catch (imageError) {
+    //   console.error("Error generating image:", imageError);
+    //   console.error("Error details:", JSON.stringify(imageError, null, 2));
+    // }
 
     // Add additional required fields
     courseData.createdBy = userId;

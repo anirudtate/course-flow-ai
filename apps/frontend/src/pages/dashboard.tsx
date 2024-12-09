@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   MoreVertical,
@@ -10,7 +10,7 @@ import {
   ImageIcon,
   Loader2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import moment from "moment";
 import {
@@ -21,28 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -64,6 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { motion } from "framer-motion";
 
 const animations = {
   container: {
@@ -84,12 +64,6 @@ const animations = {
   },
 };
 
-// Add form schema
-const createCourseSchema = z.object({
-  topic: z.string().min(3, "Topic must be at least 3 characters"),
-  difficulty: z.enum(["beginner", "intermediate", "advanced"]),
-});
-
 export default function Dashboard() {
   const {
     data: courses = [],
@@ -103,31 +77,12 @@ export default function Dashboard() {
     },
   });
 
-  const [open, setOpen] = useState(false);
   const [thumbnailDialogOpen, setThumbnailDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const form = useForm<z.infer<typeof createCourseSchema>>({
-    resolver: zodResolver(createCourseSchema),
-    defaultValues: {
-      topic: "",
-      difficulty: "beginner",
-    },
-  });
-
-  const createCourseMutation = useMutation({
-    mutationFn: async (values: z.infer<typeof createCourseSchema>) => {
-      const response = await api.post("/courses/generate", values);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      setOpen(false);
-      form.reset();
-    },
-  });
 
   const updateThumbnailMutation = useMutation({
     mutationFn: async ({
@@ -195,8 +150,6 @@ export default function Dashboard() {
     setThumbnailDialogOpen(true);
   };
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !selectedCourse) return;
 
@@ -220,10 +173,6 @@ export default function Dashboard() {
 
     setSelectedFile(file);
     updateThumbnailMutation.mutate({ courseId: selectedCourse, file });
-  };
-
-  const onSubmit = (values: z.infer<typeof createCourseSchema>) => {
-    createCourseMutation.mutate(values);
   };
 
   return (
@@ -257,13 +206,10 @@ export default function Dashboard() {
                 <Button
                   size="lg"
                   className="shrink-0 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
-                  onClick={() => setOpen(true)}
-                  disabled={createCourseMutation.isPending}
+                  onClick={() => navigate("/create-course")}
                 >
                   <Plus className="mr-2 h-5 w-5" />
-                  {createCourseMutation.isPending
-                    ? "Generating..."
-                    : "Create Course with AI"}
+                  Create Course with AI
                 </Button>
               </motion.div>
             </motion.div>
@@ -518,72 +464,6 @@ export default function Dashboard() {
                   : "Update Thumbnail"}
               </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Course with AI</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="topic"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Course Topic</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g. JavaScript Fundamentals"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="difficulty"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Difficulty Level</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select difficulty" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="beginner">Beginner</SelectItem>
-                          <SelectItem value="intermediate">
-                            Intermediate
-                          </SelectItem>
-                          <SelectItem value="advanced">Advanced</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
-                  disabled={createCourseMutation.isPending}
-                >
-                  {createCourseMutation.isPending
-                    ? "Generating Course..."
-                    : "Generate Course"}
-                </Button>
-              </form>
-            </Form>
           </DialogContent>
         </Dialog>
         <AlertDialog

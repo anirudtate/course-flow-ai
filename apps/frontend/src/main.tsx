@@ -11,6 +11,7 @@ import Dashboard from "./pages/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setupAuthInterseptor } from "./lib/utils";
 import CoursePage from "./pages/course";
+import { CreateCourse } from "./pages/create-course";
 
 const router = createBrowserRouter([
   {
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
           {
             path: "/dashboard",
             element: <Dashboard />,
+          },
+          {
+            path: "/create-course",
+            element: <CreateCourse />,
           },
           {
             path: "/courses",
