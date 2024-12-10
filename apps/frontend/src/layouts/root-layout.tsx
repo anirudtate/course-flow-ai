@@ -1,5 +1,7 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { useEffect } from "react";
+import { apiPublic } from "@/lib/utils";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -13,6 +15,14 @@ export default function RootLayout() {
   const primaryColor = getComputedStyle(document.documentElement)
     .getPropertyValue("--primary")
     .trim();
+
+  useEffect(() => {
+    try {
+      apiPublic.get("/health");
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
 
   return (
     <ClerkProvider

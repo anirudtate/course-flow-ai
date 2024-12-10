@@ -1,11 +1,12 @@
 import { CourseModel } from "../modals/course.modal";
 import { getAuth } from "@clerk/express";
 import { Router } from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import multer from "multer";
 import { put } from "@vercel/blob";
 import { join } from "path";
 import { HfInference } from "@huggingface/inference";
+import { google } from 'googleapis';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -14,18 +15,14 @@ const upload = multer({
   },
 });
 
-// Model configuration
-const MODEL_CONFIG = {
-  provider: process.env.AI_PROVIDER || 'gemini', // 'gemini' or 'huggingface'
-  huggingfaceModel: 'mistralai/Mixtral-8x7B-Instruct-v0.1'
-};
-
 export const coursesRouter = Router();
 
 coursesRouter.get("/", async (req, res) => {
   const { userId } = getAuth(req);
   try {
-    const courses = await CourseModel.find({ createdBy: userId }).sort({ createdAt: -1 });
+    const courses = await CourseModel.find({ createdBy: userId }).sort({
+      createdAt: -1,
+    });
     res.json(courses);
   } catch (error) {
     res.status(500).json({ error: "Error fetching courses" });
@@ -56,74 +53,91 @@ coursesRouter.post("/generate", async (req, res) => {
   const { userId } = getAuth(req);
   const { topic, difficulty } = req.body;
 
-  if (!topic || !difficulty) {
-    res.status(400).json({ error: "Topic and difficulty are required" });
+  if (!topic) {
+    res.status(400).json({ error: "Topic is required" });
     return;
   }
 
-  const prompt = `Generate a detailed course outline for ${topic} at ${difficulty} level. 
-    
-The response MUST be a valid JSON object with the following schema:
-{
-  "title": "string - A concise, descriptive title for the course",
-  "description": "string - A detailed 2-3 sentence description of the course",
-  "topics": [
-    {
-      "title": "string - A concise, descriptive title for the topic",
-      "description": "string - A detailed 2-3 sentence description of the topic",
-      "order": "number - The order in which the topic should be displayed in the course"
-    }
-  ],
-  "totalDuration": "number - Estimated total duration in hours (between 1-50)",
-}
+  const prompt = `
+You are an expert course designer tasked with creating a comprehensive learning path for ${topic}.
 
-Ensure the response:
-1. Contains ONLY the JSON object
-2. Uses double quotes for all keys and string values
-3. Has no trailing comma
-4. Has properly escaped special characters
-5. The imagePrompt should be usable for generating a thumbnail
-6. Topics should be in the correct order
-7. Topics should covert each step/topic required for one to complete the course
-8. A topic should been posibbly covered in a youtube video/blog.
-9. Follows the exact schema above`;
+Your task is to generate a well-structured course outline that:
+1. Is suitable for ${difficulty} level learners
+2. Progresses logically from fundamentals to more complex concepts
+3. Includes practical, hands-on topics
+4. The course should be as long as possible
+
+Requirements for the response:
+1. Must be a SINGLE valid JSON object (no additional text)
+2. Use double quotes for all keys and string values
+3. No trailing commas
+4. All special characters must be properly escaped
+5. Topics should be ordered from basic to advanced
+6. Each topic should be completable in 15-30 minutes
+7. Each topic's youtube_query should be specific enough to find relevant tutorial videos
+8. Topic descriptions should be 2-3 sentences long
+9. Must strictly follow the provided schema structure
+
+The course should feel like a cohesive learning journey rather than a collection of random topics.`;
 
   try {
     let response;
-    
-    if (MODEL_CONFIG.provider === 'huggingface') {
-      // Generate course content using Mixtral
-      const result = await hf.textGeneration({
-        model: MODEL_CONFIG.huggingfaceModel,
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 2048,
-          temperature: 0.7,
-          top_p: 0.95,
-          return_full_text: false,
+    const schema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        title: {
+          type: SchemaType.STRING,
+          description: "Title of the course",
+        },
+        description: {
+          type: SchemaType.STRING,
+          description: "Detailed description of the course",
+        },
+        topics: {
+          type: SchemaType.ARRAY,
+          description: "List of topics in the course",
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              title: {
+                type: SchemaType.STRING,
+                description: "Title of the topic",
+              },
+              description: {
+                type: SchemaType.STRING,
+                description: "Detailed description of the topic",
+              },
+              youtube_query: {
+                type: SchemaType.STRING,
+                description: "Search query to find relevant YouTube video for this topic",
+              }
+            },
+            required: ["title", "description", "youtube_query"]
+          }
         }
-      });
-      response = result.generated_text;
-    } else {
-      // Generate course content using Gemini
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      const result = await model.generateContent(prompt);
-      response = result.response.text();
-    }
+      },
+      required: ["title", "description", "topics"]
+    };
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-pro",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+      },
+    });
+    const result = await model.generateContent(prompt);
+    response = result.response.text();
     response = response.replace(/```json|```/g, "");
     response = response.replace(/```/g, "");
 
     let courseData;
     try {
       courseData = JSON.parse(response);
-      // Validate the schema
-      if (!courseData.title || !courseData.description ||  
-          !Array.isArray(courseData.topics) || !courseData.totalDuration) {
-          throw new Error('Invalid schema');
-      }
     } catch (error) {
       console.error("Error parsing AI response:", error, response);
-      res.status(500).json({ error: "Failed to generate valid course data. Please try again." });
+      res.status(500).json({
+        error: "Failed to generate valid course data. Please try again.",
+      });
       return;
     }
 
@@ -146,14 +160,14 @@ Ensure the response:
 
     //   // Convert blob to Buffer
     //   const buffer = Buffer.from(await imageBlob.arrayBuffer());
-      
+
     //   // Upload to Vercel Blob
     //   const { url } = await put(
-    //     `course-thumbnails/${Date.now()}-${courseData.title.toLowerCase().replace(/\s+/g, '-')}.png`, 
-    //     buffer, 
+    //     `course-thumbnails/${Date.now()}-${courseData.title.toLowerCase().replace(/\s+/g, '-')}.png`,
+    //     buffer,
     //     { access: 'public' }
     //   );
-      
+
     //   // Add the image URL to courseData
     //   courseData.thumbnail = url;
     // } catch (imageError) {
@@ -163,8 +177,7 @@ Ensure the response:
 
     // Add additional required fields
     courseData.createdBy = userId;
-    courseData.difficulty = difficulty;
-    
+
     // Create new course in database
     const newCourse = new CourseModel(courseData);
     await newCourse.save();
@@ -176,47 +189,164 @@ Ensure the response:
   }
 });
 
-coursesRouter.patch("/:id/thumbnail", upload.single("thumbnail"), async (req, res) => {
+coursesRouter.post("/:id/edit-structure", async (req, res) => {
   const { userId } = getAuth(req);
-  const { id } = req.params;
+  const { prompt } = req.body;
 
   try {
-    const course = await CourseModel.findById(id);
+    const course = await CourseModel.findById(req.params.id);
     if (!course) {
       res.status(404).json({ error: "Course not found" });
-      return
+      return;
     }
 
-    if (course.createdBy !== userId) {
-      res.status(403).json({ error: "Not authorized to update this course" });
-      return
+    if (!process.env.GEMINI_API_KEY) {
+      res.status(500).json({ error: "Gemini API key is not configured" });
+      return;
     }
 
-    if (!req.file) {
-      res.status(400).json({ error: "No file uploaded" });
-      return
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+    const schema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        title: {
+          type: SchemaType.STRING,
+          description: "Title of the course",
+        },
+        description: {
+          type: SchemaType.STRING,
+          description: "Detailed description of the course",
+        },
+        topics: {
+          type: SchemaType.ARRAY,
+          description: "List of topics in the course",
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              title: {
+                type: SchemaType.STRING,
+                description: "Title of the topic",
+              },
+              description: {
+                type: SchemaType.STRING,
+                description: "Detailed description of the topic",
+              },
+              youtube_query: {
+                type: SchemaType.STRING,
+                description: "Search query to find relevant YouTube video for this topic",
+              }
+            },
+            required: ["title", "description", "youtube_query"]
+          }
+        }
+      },
+      required: ["title", "description", "topics"]
+    };
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-pro",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+      },
+    });
+
+    console.log("AI Prompt:", JSON.stringify(course, null, 2));
+
+    const aiPrompt = `
+You are an expert course designer tasked with creating a comprehensive learning path for ${course.title}.
+You are tasked with modifying an existing course structure based on the following user request: "${prompt}"
+
+Current course structure:
+${JSON.stringify(course, null, 2)}
+
+Your task is to generate a well-structured course outline that:
+1. Make required changes while preserving the existing structure that should not be changed
+2. Progresses logically from fundamentals to more complex concepts
+3. Includes practical, hands-on topics
+4. The course should be as long as possible
+
+Requirements for the response:
+1. Must be a SINGLE valid JSON object (no additional text)
+2. Use double quotes for all keys and string values
+3. No trailing commas
+4. All special characters must be properly escaped
+5. Topics should be ordered from basic to advanced
+6. Each topic should be completable in 15-30 minutes
+7. Each topic's youtube_query should be specific enough to find relevant tutorial videos
+8. Topic descriptions should be 2-3 sentences long
+9. Must strictly follow the provided schema structure
+
+The course should feel like a cohesive learning journey rather than a collection of random topics.`;
+
+    const result = await model.generateContent(aiPrompt);
+    let response = result.response.text();
+    response = response.replace(/```json|```/g, "");
+    response = response.replace(/```/g, "");
+    
+    try {
+      const updatedCourse = JSON.parse(response);
+      // Update only specific fields to preserve metadata
+      course.title = updatedCourse.title;
+      course.description = updatedCourse.description;
+      course.topics = updatedCourse.topics;
+      
+      await course.save();
+      res.json(course);
+    } catch (parseError) {
+      res.status(500).json({ error: "Failed to parse AI response", parseError });
     }
-
-    // Upload to Vercel Blob Store
-    const blob = await put(
-      `thumbnails/${id}-${Date.now()}${join(req.file.originalname)}`, 
-      req.file.buffer,
-      {
-        access: 'public',
-        contentType: req.file.mimetype,
-      }
-    );
-
-    // Update course with new thumbnail URL
-    course.thumbnail = blob.url;
-    await course.save();
-
-    res.json({ thumbnail: blob.url });
   } catch (error) {
-    console.error("Error updating thumbnail:", error);
-    res.status(500).json({ error: "Error updating thumbnail" });
+    res.status(500).json({ message: "Error editing course structure", error });
   }
 });
+
+coursesRouter.patch(
+  "/:id/thumbnail",
+  upload.single("thumbnail"),
+  async (req, res) => {
+    const { userId } = getAuth(req);
+    const { id } = req.params;
+
+    try {
+      const course = await CourseModel.findById(id);
+      if (!course) {
+        res.status(404).json({ error: "Course not found" });
+        return;
+      }
+
+      if (course.createdBy !== userId) {
+        res.status(403).json({ error: "Not authorized to update this course" });
+        return;
+      }
+
+      if (!req.file) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+      }
+
+      // Upload to Vercel Blob Store
+      const blob = await put(
+        `thumbnails/${id}-${Date.now()}${join(req.file.originalname)}`,
+        req.file.buffer,
+        {
+          access: "public",
+          contentType: req.file.mimetype,
+        }
+      );
+
+      // Update course with new thumbnail URL
+      course.thumbnail = blob.url;
+      await course.save();
+
+      res.json({ thumbnail: blob.url });
+    } catch (error) {
+      console.error("Error updating thumbnail:", error);
+      res.status(500).json({ error: "Error updating thumbnail" });
+    }
+  }
+);
 
 coursesRouter.delete("/:id", async (req, res) => {
   const { userId } = getAuth(req);
@@ -226,7 +356,7 @@ coursesRouter.delete("/:id", async (req, res) => {
       res.status(404).json({ error: "Course not found" });
       return;
     }
-    
+
     // Check if the user owns the course
     if (course.createdBy !== userId) {
       res.status(403).json({ error: "Unauthorized to delete this course" });
@@ -239,3 +369,112 @@ coursesRouter.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Error deleting course" });
   }
 });
+
+// Toggle topic completion status
+coursesRouter.post("/:id/topics/:topicIndex/toggle-completion", async (req, res) => {
+  const { userId } = getAuth(req);
+  const { id, topicIndex } = req.params;
+  const { completed } = req.body;
+
+  try {
+    const course = await CourseModel.findById(id);
+    if (!course) {
+      res.status(404).json({ error: "Course not found" });
+      return
+    }
+
+    // Check if user owns the course
+    if (course.createdBy !== userId) {
+      res.status(403).json({ error: "Not authorized to modify this course" });
+      return
+    }
+
+    // Check if topic index is valid
+    if (Number(topicIndex) < 0 || Number(topicIndex) >= course.topics.length) {
+      res.status(400).json({ error: "Invalid topic index" });
+      return
+    }
+
+    // Update the completion status of the specified topic
+    course.topics[Number(topicIndex)].completed = completed;
+    
+    // Calculate and update course progress
+    const completedTopics = course.topics.filter(topic => topic.completed).length;
+    course.progress = (completedTopics / course.topics.length) * 100;
+    
+    // Save the updated course
+    await course.save();
+
+    res.json(course);
+  } catch (error) {
+    console.error("Error toggling topic completion:", error);
+    res.status(500).json({ error: "Error updating topic completion status" });
+  }
+});
+
+coursesRouter.post("/:id/topics/:topicIndex/get-video", async (req, res) => {
+  const { userId } = getAuth(req);
+  const { id, topicIndex } = req.params;
+
+  try {
+    const course = await CourseModel.findById(id);
+    if (!course) {
+      res.status(404).json({ error: "Course not found" });
+      return
+    }
+
+    // Check if user owns the course
+    if (course.createdBy !== userId) {
+      res.status(403).json({ error: "Not authorized to modify this course" });
+      return
+    }
+
+    // Check if topic index is valid
+    if (Number(topicIndex) < 0 || Number(topicIndex) >= course.topics.length) {
+      res.status(400).json({ error: "Invalid topic index" });
+      return
+    }
+
+    // Get the video id from youtube api
+    const topic = course.topics[Number(topicIndex)];
+    const videoId = await getVideoId(topic.youtube_query);
+    topic.video_id = videoId;
+    course.topics[Number(topicIndex)] = topic;
+
+    
+    // Save the updated course
+    await course.save();
+
+    res.json(course);
+  } catch (error) {
+    console.error("Error toggling topic completion:", error);
+    res.status(500).json({ error: "Error updating topic completion status" });
+  }
+});
+
+async function getVideoId(query: string): Promise<string | null> {
+  try {
+    const youtube = google.youtube({
+      version: 'v3',
+      auth: process.env.YOUTUBE_API_KEY
+    });
+
+    const response = await youtube.search.list({
+      part: ['id', 'snippet'],
+      q: query,
+      type: ['video'],
+      videoEmbeddable: 'true',
+      maxResults: 1,
+      safeSearch: 'strict'
+    });
+
+    if (response.data.items && response.data.items.length > 0 && response.data.items[0].id?.videoId) {
+      return response.data.items[0].id.videoId;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error fetching YouTube video:', error);
+    return null;
+  }
+}

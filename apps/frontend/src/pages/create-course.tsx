@@ -46,9 +46,9 @@ export function CreateCourse() {
       const response = await api.post("/courses/generate", values);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["courses"] });
-      navigate("/dashboard");
+      navigate(`/generate_videos/${data._id}`);
       form.reset();
     },
   });

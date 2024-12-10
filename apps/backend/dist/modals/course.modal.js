@@ -8,22 +8,18 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const courseSchema = new mongoose_1.default.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
-    difficulty: {
-        type: String,
-        required: true,
-        enum: ["beginner", "intermediate", "advanced"],
-    },
     topics: [
         {
             title: { type: String, required: true },
             description: { type: String, required: true },
-            order: { type: Number, required: true },
+            youtube_query: { type: String, required: true },
+            video_id: { type: String, required: false },
+            completed: { type: Boolean, default: false },
         },
     ],
-    createdBy: { type: String, required: true }, // Clerk userId
     progress: { type: Number, default: 0 },
-    totalDuration: { type: Number, required: true }, // in minutes
     thumbnail: { type: String, default: "" },
+    createdBy: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setupAuthInterseptor } from "./lib/utils";
 import CoursePage from "./pages/course";
 import { CreateCourse } from "./pages/create-course";
+import { GenerateVideosPage } from "./pages/generate-videos";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
           {
             path: "/create-course",
             element: <CreateCourse />,
+          },
+          {
+            path: "/generate_videos/:id",
+            element: <GenerateVideosPage />,
           },
           {
             path: "/courses",

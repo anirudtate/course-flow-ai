@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   MoreVertical,
-  Pencil,
   Trash,
   BookmarkPlus,
   ArrowRight,
@@ -291,11 +290,6 @@ export default function Dashboard() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() => console.log("Edit with AI")}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" /> Edit with AI
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
                               className="cursor-pointer"
                               onClick={() => handleThumbnailUpdate(course._id)}
                             >
@@ -330,7 +324,7 @@ export default function Dashboard() {
                             />
                           </div>
                           <span className="text-sm font-medium text-primary">
-                            {course.progress || 0}%
+                            {(course.progress || 0).toFixed(0)}%
                           </span>
                         </div>
 
