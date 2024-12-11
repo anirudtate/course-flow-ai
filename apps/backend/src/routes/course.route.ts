@@ -68,7 +68,11 @@ Requirements for the response:
 4. All special characters must be properly escaped
 5. Topics should be ordered from basic to advanced
 6. Each topic should be completable in 15-30 minutes
-7. Each topic's youtube_query should be specific enough to find relevant tutorial videos
+7. Each topic's youtube_query must be highly specific and educational-focused:
+   - Include words like "tutorial", "guide", or "learn"
+   - Focus on the exact concept being taught
+   - Include relevant programming language or framework names
+   - Example: "javascript array map function tutorial" instead of just "array map"
 8. Topic descriptions should be 2-3 sentences long
 9. Must strictly follow the provided schema structure
 
@@ -103,7 +107,7 @@ The course should feel like a cohesive learning journey rather than a collection
               },
               youtube_query: {
                 type: SchemaType.STRING,
-                description: "Search query to find relevant YouTube video for this topic",
+                description: "A specific, educational-focused search query to find a relevant YouTube tutorial video for this topic. Should include keywords like 'tutorial', 'guide', or 'learn' and be focused on the exact concept being taught. For example: 'javascript array map function tutorial' or 'learn python list comprehension guide'",
               }
             },
             required: ["title", "description", "youtube_query"]
@@ -239,7 +243,7 @@ coursesRouter.post("/:id/edit-structure", async (req, res) => {
               },
               youtube_query: {
                 type: SchemaType.STRING,
-                description: "Search query to find relevant YouTube video for this topic",
+                description: "A specific, educational-focused search query to find a relevant YouTube tutorial video for this topic. Should include keywords like 'tutorial', 'guide', or 'learn' and be focused on the exact concept being taught. For example: 'javascript array map function tutorial' or 'learn python list comprehension guide'",
               }
             },
             required: ["title", "description", "youtube_query"]
@@ -279,7 +283,11 @@ Requirements for the response:
 4. All special characters must be properly escaped
 5. Topics should be ordered from basic to advanced
 6. Each topic should be completable in 15-30 minutes
-7. Each topic's youtube_query should be specific enough to find relevant tutorial videos
+7. Each topic's youtube_query must be highly specific and educational-focused:
+   - Include words like "tutorial", "guide", or "learn"
+   - Focus on the exact concept being taught
+   - Include relevant programming language or framework names
+   - Example: "javascript array map function tutorial" instead of just "array map"
 8. Topic descriptions should be 2-3 sentences long
 9. Must strictly follow the provided schema structure
 
@@ -460,22 +468,62 @@ async function getVideoId(query: string): Promise<string | null> {
       auth: process.env.YOUTUBE_API_KEY
     });
 
+    const exactResponse = await searchYouTube(youtube, query);
+    if (exactResponse) return exactResponse;
+
+    return null;
+  } catch (error) {
+    console.error('Error fetching YouTube video:', error);
+    return null;
+  }
+}
+
+async function searchYouTube(youtube: any, query: string): Promise<string | null> {
+  try {
     const response = await youtube.search.list({
       part: ['id', 'snippet'],
       q: query,
       type: ['video'],
       videoEmbeddable: 'true',
-      maxResults: 1,
-      safeSearch: 'strict'
+      maxResults: 5, // Get more results to filter
+      safeSearch: 'strict',
+      relevanceLanguage: 'en',
+      videoDuration: 'medium', // Filter for medium length videos
+      videoDefinition: 'high', // Prefer HD videos
+      fields: 'items(id/videoId,snippet/title,snippet/description)', // Only get needed fields
     });
 
-    if (response.data.items && response.data.items.length > 0 && response.data.items[0].id?.videoId) {
-      return response.data.items[0].id.videoId;
+    if (!response.data.items || response.data.items.length === 0) {
+      return null;
     }
 
-    return null;
+    // Filter and score videos based on relevance
+    const scoredVideos = response.data.items.map((item: any) => {
+      let score = 0;
+      const title = item.snippet?.title?.toLowerCase() || '';
+      const description = item.snippet?.description?.toLowerCase() || '';
+      const searchTerms = query.toLowerCase().split(' ');
+
+      // Score based on title matches
+      searchTerms.forEach(term => {
+        if (title.includes(term)) score += 2;
+        if (description.includes(term)) score += 1;
+      });
+
+      // Bonus points for educational indicators
+      if (title.includes('tutorial') || title.includes('guide') || 
+          title.includes('learn') || title.includes('introduction')) {
+        score += 3;
+      }
+
+      return { videoId: item.id?.videoId, score };
+    });
+
+    // Sort by score and get the best match
+    scoredVideos.sort((a: any, b: any) => b.score - a.score);
+    return scoredVideos[0]?.videoId || null;
   } catch (error) {
-    console.error('Error fetching YouTube video:', error);
+    console.error('Error in YouTube search:', error);
     return null;
   }
 }

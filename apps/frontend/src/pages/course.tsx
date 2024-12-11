@@ -245,7 +245,11 @@ export default function CoursePage() {
                       className="w-full aspect-video"
                       src={`https://www.youtube.com/embed/${activeTopic.video_id}`}
                       title="Video Player"
+                      /* @ts-ignore */
+                      frameborder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                      allowfullscreen
                     ></iframe>
                   </div>
                   <div className="mt-4 flex justify-between items-center text-sm text-muted-foreground">

@@ -311,11 +311,20 @@ export default function Dashboard() {
                     </div>
 
                     <div className="p-6">
-                      <div className="flex items-start justify-between mb-4 h-[60px]">
-                        <h3 className="text-xl font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-                          {course.title}
+                      <div className="flex items-start justify-between mb-1">
+                        <h3
+                          className="text-xl font-semibold truncate group-hover:text-primary transition-colors"
+                          title={course.title}
+                        >
+                          <span className="inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                            {course.title}
+                          </span>
                         </h3>
                       </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                        {course.description}
+                      </p>
 
                       <div className="space-y-4 flex flex-col">
                         <div className="flex items-center gap-2">
@@ -332,10 +341,6 @@ export default function Dashboard() {
 
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">
-                              Duration: {course.totalDuration}min
-                            </span>
-                            <span className="h-1 w-1 rounded-full bg-muted-foreground" />
                             <span>
                               Updated {moment(course.updatedAt).fromNow()}
                             </span>
