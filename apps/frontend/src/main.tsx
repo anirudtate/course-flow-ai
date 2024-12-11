@@ -13,6 +13,7 @@ import { setupAuthInterseptor } from "./lib/utils";
 import CoursePage from "./pages/course";
 import { CreateCourse } from "./pages/create-course";
 import { GenerateVideosPage } from "./pages/generate-videos";
+import { Toaster } from "./components/ui/toaster";
 
 const router = createBrowserRouter([
   {
@@ -81,6 +82,7 @@ function App() {
           <RouterProvider router={router} />
         </ThemeProvider>
       </QueryClientProvider>
+      <Toaster />
     </StrictMode>
   );
 }

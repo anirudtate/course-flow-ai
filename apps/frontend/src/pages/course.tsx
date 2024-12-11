@@ -37,6 +37,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CoursePage() {
   const { id } = useParams();
@@ -317,6 +318,7 @@ function EditWithAI({ id }: { id: string }) {
   const [aiPrompt, setAiPrompt] = useState("");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const editStructureMutation = useMutation({
     mutationFn: async (prompt: string) => {
@@ -332,9 +334,10 @@ function EditWithAI({ id }: { id: string }) {
 
   const handleAiEdit = async () => {
     if (!aiPrompt.trim()) {
-      alert(
-        "Please enter a description of how you'd like to modify the course"
-      );
+      toast({
+        title:
+          "Please enter a description of how you'd like to modify the course",
+      });
       return;
     }
 
@@ -345,10 +348,11 @@ function EditWithAI({ id }: { id: string }) {
       navigate(`/generate_videos/${id}`);
     } catch (error: any) {
       console.error("Failed to edit structure:", error);
-      alert(
-        error.response?.data?.error ||
-          "Failed to edit course structure. Please try again."
-      );
+      toast({
+        title:
+          error.response?.data?.error ||
+          "Failed to edit course structure. Please try again.",
+      });
     }
   };
 

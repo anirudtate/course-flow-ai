@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 const animations = {
   container: {
@@ -82,6 +83,7 @@ export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const updateThumbnailMutation = useMutation({
     mutationFn: async ({
@@ -154,7 +156,7 @@ export default function Dashboard() {
 
     const file = e.target.files[0];
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
+      toast({ title: "Please upload an image file" });
       return;
     }
 
@@ -166,7 +168,7 @@ export default function Dashboard() {
 
     const file = e.target.files[0];
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
+      toast({ title: "Please upload an image file" });
       return;
     }
 
