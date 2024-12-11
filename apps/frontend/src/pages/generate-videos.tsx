@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { api } from "@/lib/utils";
 import FloatingNavbar from "@/components/floating-navbar";
 import { Footer } from "@/components/footer";
@@ -11,6 +10,28 @@ import { useEffect } from "react";
 export function GenerateVideosPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const generateVideoMutation = useMutation({
+    mutationFn: async ({
+      topicIndex,
+      query,
+    }: {
+      topicIndex: number;
+      query: string;
+    }) => {
+      const response = await api.post(
+        `/courses/${id}/topics/${topicIndex}/get-video`,
+        {
+          query,
+        }
+      );
+      return { ...response.data, topicIndex };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["course", id] });
+    },
+  });
 
   const { data: course, isLoading } = useQuery({
     queryKey: ["course", id],
@@ -31,6 +52,27 @@ export function GenerateVideosPage() {
     countVideosGenerated && countVideosTotal
       ? (countVideosGenerated / countVideosTotal) * 100
       : 0;
+
+  useEffect(() => {
+    if (course) {
+      const generateNextVideo = async () => {
+        const pendingTopic = course.topics.find(
+          (topic: any) => !topic.video_id
+        );
+        if (pendingTopic) {
+          const index = course.topics.indexOf(pendingTopic);
+          await generateVideoMutation.mutateAsync({
+            topicIndex: index,
+            query: pendingTopic.youtube_query,
+          });
+        }
+      };
+
+      if (!generateVideoMutation.isPending) {
+        generateNextVideo();
+      }
+    }
+  }, [course, generateVideoMutation.isPending]);
 
   if (isLoading) {
     return (
@@ -77,7 +119,12 @@ export function GenerateVideosPage() {
             <div className="space-y-6">
               {course.topics.map((topic: any, index: number) => {
                 return (
-                  <TopicCard key={index} topic={topic} id={id} index={index} />
+                  <TopicCard
+                    key={index}
+                    topic={topic}
+                    index={index}
+                    course={course}
+                  />
                 );
               })}
             </div>
@@ -89,42 +136,13 @@ export function GenerateVideosPage() {
   );
 }
 
-function TopicCard({ topic, id, index }: any) {
-  const queryClient = useQueryClient();
-
-  const generateVideoMutation = useMutation({
-    mutationFn: async ({
-      topicIndex,
-      query,
-    }: {
-      topicIndex: number;
-      query: string;
-    }) => {
-      const response = await api.post(
-        `/courses/${id}/topics/${topicIndex}/get-video`,
-        {
-          query,
-        }
-      );
-      return { ...response.data, topicIndex };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["course", id] });
-    },
-  });
-  const handleGenerateVideo = (topicIndex: number, query: string) => {
-    generateVideoMutation.mutate({ topicIndex, query });
-  };
-
-  useEffect(() => {
-    if (!topic.video_id) {
-      handleGenerateVideo(index, topic.youtube_query);
-    }
-  }, [topic.video_id]);
-
-  const isGenerating = generateVideoMutation.isPending;
+function TopicCard({ topic, index, course }: any) {
+  const isGenerating =
+    topic.video_id === null &&
+    index === course?.topics.findIndex((t: any) => !t.video_id);
   const isSuccess = topic.video_id;
-  const hasError = generateVideoMutation.isError;
+  const hasError = false;
+
   return (
     <div
       key={index}
@@ -153,12 +171,10 @@ function TopicCard({ topic, id, index }: any) {
             Failed
           </div>
         ) : (
-          <Button
-            onClick={() => handleGenerateVideo(index, topic.youtube_query)}
-            disabled={isGenerating}
-          >
-            Generate Video
-          </Button>
+          <div className="flex items-center text-muted-foreground">
+            <Loader2 className="w-5 h-5 mr-2" />
+            Waiting...
+          </div>
         )}
       </div>
     </div>

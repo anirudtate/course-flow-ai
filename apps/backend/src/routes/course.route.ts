@@ -5,7 +5,7 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import multer from "multer";
 import { put } from "@vercel/blob";
 import { join } from "path";
-import { HfInference } from "@huggingface/inference";
+import { createClient } from 'pexels';
 import { google } from 'googleapis';
 
 const upload = multer({
@@ -43,12 +43,6 @@ coursesRouter.get("/:id", async (req, res) => {
 });
 
 coursesRouter.post("/generate", async (req, res) => {
-  if (!process.env.HUGGINGFACE_API_KEY) {
-    res.status(500).json({ error: "Hugging Face API key is not configured" });
-    return;
-  }
-
-  const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
   const { userId } = getAuth(req);
   const { topic, difficulty } = req.body;
@@ -133,6 +127,7 @@ The course should feel like a cohesive learning journey rather than a collection
     let courseData;
     try {
       courseData = JSON.parse(response);
+      courseData.createdBy = userId;
     } catch (error) {
       console.error("Error parsing AI response:", error, response);
       res.status(500).json({
@@ -141,46 +136,56 @@ The course should feel like a cohesive learning journey rather than a collection
       return;
     }
 
-    // Generate an image for the course using Hugging Face
-    // try {
-    //   const imageBlob = await hf.textToImage({
-    //     inputs: courseData.title,
-    //     model: "frankhenry6/ytthumbnail",
-    //     parameters: {
-    //       width: 768,
-    //       height: 432,
-    //       guidance_scale: 7.5,
-    //       num_inference_steps: 50
-    //     }
-    //   });
+    async function generateAndSaveThumbnail(course: any) {
+      try {
+        const pexelsClient = createClient(process.env.PEXELS_API_KEY!);
+        
+        // Search for relevant images
+        const searchResults = await pexelsClient.photos.search({
+          query: course.title,
+          per_page: 1,
+          orientation: 'landscape'
+        });
 
-    //   if (!imageBlob) {
-    //     throw new Error("No image generated");
-    //   }
+        // Type guard to check if searchResults has photos
+        if (!('photos' in searchResults) || !searchResults.photos || searchResults.photos.length === 0) {
+          throw new Error("No images found on Pexels or invalid search results");
+        }
 
-    //   // Convert blob to Buffer
-    //   const buffer = Buffer.from(await imageBlob.arrayBuffer());
+        // Get the image URL
+        const imageUrl = searchResults.photos[0].src.large;
 
-    //   // Upload to Vercel Blob
-    //   const { url } = await put(
-    //     `course-thumbnails/${Date.now()}-${courseData.title.toLowerCase().replace(/\s+/g, '-')}.png`,
-    //     buffer,
-    //     { access: 'public' }
-    //   );
+        // Fetch the image
+        const response = await fetch(imageUrl);
+        const imageBuffer = Buffer.from(await response.arrayBuffer());
 
-    //   // Add the image URL to courseData
-    //   courseData.thumbnail = url;
-    // } catch (imageError) {
-    //   console.error("Error generating image:", imageError);
-    //   console.error("Error details:", JSON.stringify(imageError, null, 2));
-    // }
+        // Upload to Vercel Blob
+        const { url } = await put(
+          `course-thumbnails/${Date.now()}-${course.title.toLowerCase().replace(/\s+/g, '-')}.jpg`,
+          imageBuffer,
+          { access: 'public' }
+        );
 
-    // Add additional required fields
-    courseData.createdBy = userId;
+        // Update course with thumbnail URL
+        course.thumbnail = url;
+        await course.save();
+        
+        console.log(`Successfully saved thumbnail for course: ${course.title}`);
+      } catch (error) {
+        console.error(`Error getting thumbnail for course ${course.title}:`, error);
+      }
+    }
 
     // Create new course in database
     const newCourse = new CourseModel(courseData);
     await newCourse.save();
+
+    // Trigger thumbnail generation asynchronously
+    if (process.env.PEXELS_API_KEY) {
+      generateAndSaveThumbnail(newCourse).catch(error => {
+        console.error("Error in async thumbnail generation:", error);
+      });
+    }
 
     res.json(newCourse);
   } catch (error) {
@@ -302,51 +307,47 @@ The course should feel like a cohesive learning journey rather than a collection
   }
 });
 
-coursesRouter.patch(
-  "/:id/thumbnail",
-  upload.single("thumbnail"),
-  async (req, res) => {
-    const { userId } = getAuth(req);
-    const { id } = req.params;
+coursesRouter.post("/:id/edit-thumbnail", upload.single("thumbnail"), async (req, res) => {
+  const { userId } = getAuth(req);
+  const { id } = req.params;
 
-    try {
-      const course = await CourseModel.findById(id);
-      if (!course) {
-        res.status(404).json({ error: "Course not found" });
-        return;
-      }
-
-      if (course.createdBy !== userId) {
-        res.status(403).json({ error: "Not authorized to update this course" });
-        return;
-      }
-
-      if (!req.file) {
-        res.status(400).json({ error: "No file uploaded" });
-        return;
-      }
-
-      // Upload to Vercel Blob Store
-      const blob = await put(
-        `thumbnails/${id}-${Date.now()}${join(req.file.originalname)}`,
-        req.file.buffer,
-        {
-          access: "public",
-          contentType: req.file.mimetype,
-        }
-      );
-
-      // Update course with new thumbnail URL
-      course.thumbnail = blob.url;
-      await course.save();
-
-      res.json({ thumbnail: blob.url });
-    } catch (error) {
-      console.error("Error updating thumbnail:", error);
-      res.status(500).json({ error: "Error updating thumbnail" });
+  try {
+    const course = await CourseModel.findById(id);
+    if (!course) {
+      res.status(404).json({ error: "Course not found" });
+      return;
     }
+
+    if (course.createdBy !== userId) {
+      res.status(403).json({ error: "Not authorized to update this course" });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ error: "No file uploaded" });
+      return;
+    }
+
+    // Upload to Vercel Blob Store
+    const blob = await put(
+      `thumbnails/${id}-${Date.now()}${join(req.file.originalname)}`,
+      req.file.buffer,
+      {
+        access: "public",
+        contentType: req.file.mimetype,
+      }
+    );
+
+    // Update course with new thumbnail URL
+    course.thumbnail = blob.url;
+    await course.save();
+
+    res.json({ thumbnail: blob.url });
+  } catch (error) {
+    console.error("Error updating thumbnail:", error);
+    res.status(500).json({ error: "Error updating thumbnail" });
   }
-);
+});
 
 coursesRouter.delete("/:id", async (req, res) => {
   const { userId } = getAuth(req);

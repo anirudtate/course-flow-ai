@@ -20,7 +20,7 @@ const generative_ai_1 = require("@google/generative-ai");
 const multer_1 = __importDefault(require("multer"));
 const blob_1 = require("@vercel/blob");
 const path_1 = require("path");
-const inference_1 = require("@huggingface/inference");
+const pexels_1 = require("pexels");
 const googleapis_1 = require("googleapis");
 const upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
@@ -55,11 +55,6 @@ exports.coursesRouter.get("/:id", (req, res) => __awaiter(void 0, void 0, void 0
     }
 }));
 exports.coursesRouter.post("/generate", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!process.env.HUGGINGFACE_API_KEY) {
-        res.status(500).json({ error: "Hugging Face API key is not configured" });
-        return;
-    }
-    const hf = new inference_1.HfInference(process.env.HUGGINGFACE_API_KEY);
     const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
     const { userId } = (0, express_1.getAuth)(req);
     const { topic, difficulty } = req.body;
@@ -140,6 +135,7 @@ The course should feel like a cohesive learning journey rather than a collection
         let courseData;
         try {
             courseData = JSON.parse(response);
+            courseData.createdBy = userId;
         }
         catch (error) {
             console.error("Error parsing AI response:", error, response);
@@ -148,40 +144,46 @@ The course should feel like a cohesive learning journey rather than a collection
             });
             return;
         }
-        // Generate an image for the course using Hugging Face
-        // try {
-        //   const imageBlob = await hf.textToImage({
-        //     inputs: courseData.title,
-        //     model: "frankhenry6/ytthumbnail",
-        //     parameters: {
-        //       width: 768,
-        //       height: 432,
-        //       guidance_scale: 7.5,
-        //       num_inference_steps: 50
-        //     }
-        //   });
-        //   if (!imageBlob) {
-        //     throw new Error("No image generated");
-        //   }
-        //   // Convert blob to Buffer
-        //   const buffer = Buffer.from(await imageBlob.arrayBuffer());
-        //   // Upload to Vercel Blob
-        //   const { url } = await put(
-        //     `course-thumbnails/${Date.now()}-${courseData.title.toLowerCase().replace(/\s+/g, '-')}.png`,
-        //     buffer,
-        //     { access: 'public' }
-        //   );
-        //   // Add the image URL to courseData
-        //   courseData.thumbnail = url;
-        // } catch (imageError) {
-        //   console.error("Error generating image:", imageError);
-        //   console.error("Error details:", JSON.stringify(imageError, null, 2));
-        // }
-        // Add additional required fields
-        courseData.createdBy = userId;
+        function generateAndSaveThumbnail(course) {
+            return __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const pexelsClient = (0, pexels_1.createClient)(process.env.PEXELS_API_KEY);
+                    // Search for relevant images
+                    const searchResults = yield pexelsClient.photos.search({
+                        query: course.title,
+                        per_page: 1,
+                        orientation: 'landscape'
+                    });
+                    // Type guard to check if searchResults has photos
+                    if (!('photos' in searchResults) || !searchResults.photos || searchResults.photos.length === 0) {
+                        throw new Error("No images found on Pexels or invalid search results");
+                    }
+                    // Get the image URL
+                    const imageUrl = searchResults.photos[0].src.large;
+                    // Fetch the image
+                    const response = yield fetch(imageUrl);
+                    const imageBuffer = Buffer.from(yield response.arrayBuffer());
+                    // Upload to Vercel Blob
+                    const { url } = yield (0, blob_1.put)(`course-thumbnails/${Date.now()}-${course.title.toLowerCase().replace(/\s+/g, '-')}.jpg`, imageBuffer, { access: 'public' });
+                    // Update course with thumbnail URL
+                    course.thumbnail = url;
+                    yield course.save();
+                    console.log(`Successfully saved thumbnail for course: ${course.title}`);
+                }
+                catch (error) {
+                    console.error(`Error getting thumbnail for course ${course.title}:`, error);
+                }
+            });
+        }
         // Create new course in database
         const newCourse = new course_modal_1.CourseModel(courseData);
         yield newCourse.save();
+        // Trigger thumbnail generation asynchronously
+        if (process.env.PEXELS_API_KEY) {
+            generateAndSaveThumbnail(newCourse).catch(error => {
+                console.error("Error in async thumbnail generation:", error);
+            });
+        }
         res.json(newCourse);
     }
     catch (error) {
@@ -293,7 +295,7 @@ The course should feel like a cohesive learning journey rather than a collection
         res.status(500).json({ message: "Error editing course structure", error });
     }
 }));
-exports.coursesRouter.patch("/:id/thumbnail", upload.single("thumbnail"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.coursesRouter.post("/:id/edit-thumbnail", upload.single("thumbnail"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = (0, express_1.getAuth)(req);
     const { id } = req.params;
     try {
