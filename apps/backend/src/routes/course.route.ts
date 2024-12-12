@@ -142,41 +142,82 @@ The course should feel like a cohesive learning journey rather than a collection
 
     async function generateAndSaveThumbnail(course: any) {
       try {
-        const pexelsClient = createClient(process.env.PEXELS_API_KEY!);
-        
-        // Search for relevant images
-        const searchResults = await pexelsClient.photos.search({
-          query: course.title,
-          per_page: 1,
-          orientation: 'landscape'
-        });
+        // First try Google Custom Search
+        if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_SEARCH_ENGINE_ID) {
+          const imageUrl = await searchGoogleImages(course.title + " thumbnail");
+          if (imageUrl) {
+            // Fetch and save the image
+            const response = await fetch(imageUrl);
+            const imageBuffer = Buffer.from(await response.arrayBuffer());
 
-        // Type guard to check if searchResults has photos
-        if (!('photos' in searchResults) || !searchResults.photos || searchResults.photos.length === 0) {
-          throw new Error("No images found on Pexels or invalid search results");
+            // Upload to Vercel Blob
+            const { url } = await put(
+              `course-thumbnails/${Date.now()}-${course.title.toLowerCase().replace(/\s+/g, '-')}.jpg`,
+              imageBuffer,
+              { access: 'public' }
+            );
+
+            // Update course with thumbnail URL
+            course.thumbnail = url;
+            await course.save();
+            console.log(`Successfully saved Google Images thumbnail for course: ${course.title}`);
+            return;
+          }
         }
 
-        // Get the image URL
-        const imageUrl = searchResults.photos[0].src.large;
+        // Fallback to Pexels if Google search fails
+        if (process.env.PEXELS_API_KEY) {
+          const pexelsClient = createClient(process.env.PEXELS_API_KEY);
+          const searchResults = await pexelsClient.photos.search({
+            query: course.title,
+            per_page: 1,
+            orientation: 'landscape'
+          });
 
-        // Fetch the image
-        const response = await fetch(imageUrl);
-        const imageBuffer = Buffer.from(await response.arrayBuffer());
+          if ('photos' in searchResults && searchResults.photos && searchResults.photos.length > 0) {
+            const imageUrl = searchResults.photos[0].src.large;
+            const response = await fetch(imageUrl);
+            const imageBuffer = Buffer.from(await response.arrayBuffer());
 
-        // Upload to Vercel Blob
-        const { url } = await put(
-          `course-thumbnails/${Date.now()}-${course.title.toLowerCase().replace(/\s+/g, '-')}.jpg`,
-          imageBuffer,
-          { access: 'public' }
-        );
+            const { url } = await put(
+              `course-thumbnails/${Date.now()}-${course.title.toLowerCase().replace(/\s+/g, '-')}.jpg`,
+              imageBuffer,
+              { access: 'public' }
+            );
 
-        // Update course with thumbnail URL
-        course.thumbnail = url;
-        await course.save();
-        
-        console.log(`Successfully saved thumbnail for course: ${course.title}`);
+            course.thumbnail = url;
+            await course.save();
+            console.log(`Successfully saved Pexels thumbnail for course: ${course.title}`);
+          }
+        }
       } catch (error) {
         console.error(`Error getting thumbnail for course ${course.title}:`, error);
+      }
+    }
+
+    async function searchGoogleImages(query: string): Promise<string | null> {
+      try {
+        const customsearch = google.customsearch('v1');
+        const response = await customsearch.cse.list({
+          auth: process.env.GOOGLE_API_KEY,
+          cx: process.env.GOOGLE_SEARCH_ENGINE_ID,
+          q: query,
+          searchType: 'image',
+          num: 1,
+          imgSize: 'large',
+          safe: 'active',
+          imgType: 'photo'
+        });
+
+        console.log("google images response", response);
+
+        if (response.data.items && response.data.items.length > 0) {
+          return response?.data?.items[0]?.link ?? null;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error searching Google Images:', error);
+        return null;
       }
     }
 
@@ -185,7 +226,7 @@ The course should feel like a cohesive learning journey rather than a collection
     await newCourse.save();
 
     // Trigger thumbnail generation asynchronously
-    if (process.env.PEXELS_API_KEY) {
+    if (process.env.GOOGLE_API_KEY || process.env.PEXELS_API_KEY) {
       generateAndSaveThumbnail(newCourse).catch(error => {
         console.error("Error in async thumbnail generation:", error);
       });
