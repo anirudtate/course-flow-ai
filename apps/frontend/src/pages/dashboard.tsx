@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   MoreVertical,
@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useCourses } from "@/hooks/use-courses";
 
 const animations = {
   container: {
@@ -69,13 +70,7 @@ export default function Dashboard() {
     data: courses = [],
     isLoading,
     isFetching,
-  } = useQuery({
-    queryKey: ["courses"],
-    queryFn: async () => {
-      const response = await api.get("/courses");
-      return response.data;
-    },
-  });
+  } = useCourses();
 
   const [thumbnailDialogOpen, setThumbnailDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);

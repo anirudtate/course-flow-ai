@@ -14,13 +14,14 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 import { AccountMenu } from "./account-menu";
-import { Input } from "./ui/input";
+import { CourseSearch } from "./course-search";
 
 const FloatingNavbar = ({
   showAccount = true,
   hideWhenScrolling = true,
 }: { showAccount?: boolean; hideWhenScrolling?: boolean } = {}) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -65,13 +66,20 @@ const FloatingNavbar = ({
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
             {showAccount && (
-              <div className="relative flex-grow md:flex-grow-0">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search courses..."
-                  className="pl-10 w-full md:w-[250px] bg-transparent"
-                />
-              </div>
+              <>
+                <Button
+                  variant="outline"
+                  className="w-[250px] justify-start text-left font-normal bg-transparent"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  <span>Search courses...</span>
+                  <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground ml-auto">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </Button>
+                <CourseSearch open={searchOpen} onOpenChange={setSearchOpen} />
+              </>
             )}
             <ModeToggle
               buttonVariant="outline"
